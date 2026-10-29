@@ -1,0 +1,10 @@
+<?php
+/** @var \Magento\Framework\View\Element\Template $block */
+$token = (string) $block->getRequest()->getParam('token', '');
+?>
+<div class="message info"><div><?= $block->escapeHtml(__('Stop receiving review invitations?')) ?></div></div>
+<form method="post" action="<?= $block->escapeUrl($block->getUrl('reviewreminder/reminder/unsubscribe', ['_current' => true])) ?>">
+    <input type="hidden" name="token" value="<?= $block->escapeHtmlAttr($token) ?>" />
+    <?= $block->getBlockHtml('formkey') ?>
+    <button type="submit" class="action primary"><span><?= $block->escapeHtml(__('Unsubscribe')) ?></span></button>
+</form>

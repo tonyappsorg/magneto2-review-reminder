@@ -1,0 +1,10 @@
+<!--@subject {{trans "How are you enjoying your purchase?"}} @-->
+<!--@vars {"var customerName":"Customer Name","var products":"Products","var unsubscribeUrl":"Unsubscribe URL","var orderIncrementId":"Order Number"} @-->
+{{template config_path="design/email/header_template"}}
+<p>{{trans "Hi %name," name=$customerName}}</p>
+<p>{{trans "You recently received order #%order. Would you share your thoughts?" order=$orderIncrementId}}</p>
+{{foreach products as product}}
+<p><a href="{{var product.url}}">{{var product.name}}</a></p>
+{{/foreach}}
+<p><small><a href="{{var unsubscribeUrl}}">{{trans "Stop review invitations"}}</a></small></p>
+{{template config_path="design/email/footer_template"}}

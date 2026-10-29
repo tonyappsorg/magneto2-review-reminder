@@ -1,0 +1,9 @@
+{
+    "name": "tonyapps/module-review-reminder",
+    "description": "Post-shipment product review invitations and verified buyer labels.",
+    "type": "magento2-module",
+    "license": "proprietary",
+    "require": {"php": "~8.3.0||~8.4.0", "magento/framework": "*", "magento/module-sales": "*", "magento/module-review": "*"},
+    "version": "0.1.0",
+    "autoload": {"files": ["registration.php"], "psr-4": {"Tonyapps\\ReviewReminder\\": ""}}
+}

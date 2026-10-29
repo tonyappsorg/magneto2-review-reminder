@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="tonyapps_review_reminder" resource="default" engine="innodb" comment="Review Reminder Invitation">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="order_id" padding="10" unsigned="true" nullable="false" comment="Order ID"/>
+        <column xsi:type="smallint" name="store_id" padding="5" unsigned="true" nullable="false" default="0" comment="Store ID"/>
+        <column xsi:type="varchar" name="email" length="255" nullable="false" comment="Recipient Email"/>
+        <column xsi:type="varchar" name="token" length="64" nullable="false" comment="Unsubscribe Token"/>
+        <column xsi:type="smallint" name="status" unsigned="true" nullable="false" default="0" comment="0 pending, 1 sent, 2 email opted out"/>
+        <column xsi:type="timestamp" name="sent_at" on_update="false" nullable="true" comment="Sent At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY"><column name="entity_id"/></constraint>
+        <constraint xsi:type="unique" referenceId="TONYAPPS_REVIEW_REMINDER_ORDER"><column name="order_id"/></constraint>
+        <constraint xsi:type="unique" referenceId="TONYAPPS_REVIEW_REMINDER_TOKEN"><column name="token"/></constraint>
+        <index referenceId="TONYAPPS_REVIEW_REMINDER_EMAIL_STATUS" indexType="btree"><column name="email"/><column name="status"/></index>
+    </table>
+    <table name="tonyapps_review_reminder_verified_review" resource="default" engine="innodb" comment="Verified Purchaser Review">
+        <column xsi:type="bigint" name="review_id" unsigned="true" nullable="false" comment="Review ID"/>
+        <column xsi:type="int" name="order_id" padding="10" unsigned="true" nullable="false" comment="Order ID"/>
+        <column xsi:type="int" name="order_item_id" padding="10" unsigned="true" nullable="false" comment="Order Item ID"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY"><column name="review_id"/></constraint>
+        <constraint xsi:type="foreign" referenceId="TONYAPPS_RR_VERIFIED_REVIEW_ID_REVIEW_ID" table="tonyapps_review_reminder_verified_review" column="review_id" referenceTable="review" referenceColumn="review_id" onDelete="CASCADE"/>
+        <constraint xsi:type="foreign" referenceId="TONYAPPS_RR_VERIFIED_REVIEW_ORDER_ID_ORDER_ID" table="tonyapps_review_reminder_verified_review" column="order_id" referenceTable="sales_order" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <constraint xsi:type="foreign" referenceId="TONYAPPS_RR_VERIFIED_REVIEW_ITEM_ID_ITEM_ID" table="tonyapps_review_reminder_verified_review" column="order_item_id" referenceTable="sales_order_item" referenceColumn="item_id" onDelete="CASCADE"/>
+    </table>
+</schema>
