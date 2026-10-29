@@ -6,7 +6,8 @@
         <column xsi:type="smallint" name="store_id" padding="5" unsigned="true" nullable="false" default="0" comment="Store ID"/>
         <column xsi:type="varchar" name="email" length="255" nullable="false" comment="Recipient Email"/>
         <column xsi:type="varchar" name="token" length="64" nullable="false" comment="Unsubscribe Token"/>
-        <column xsi:type="smallint" name="status" unsigned="true" nullable="false" default="0" comment="0 pending, 1 sent, 2 email opted out"/>
+        <column xsi:type="smallint" name="status" unsigned="true" nullable="false" default="0" comment="0 pending, 1 sent, 2 email opted out, 3 failed"/>
+        <column xsi:type="smallint" name="attempts" unsigned="true" nullable="false" default="0" comment="Failed Send Attempts"/>
         <column xsi:type="timestamp" name="sent_at" on_update="false" nullable="true" comment="Sent At"/>
         <constraint xsi:type="primary" referenceId="PRIMARY"><column name="entity_id"/></constraint>
         <constraint xsi:type="unique" referenceId="TONYAPPS_REVIEW_REMINDER_ORDER"><column name="order_id"/></constraint>

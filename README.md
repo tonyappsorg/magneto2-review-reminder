@@ -7,7 +7,7 @@ Automatically invite customers to review products from orders that have shipped.
 | Feature | Decision |
 |---|---|
 | Who qualifies | Customer orders with a shipment and at least one shipped, reviewable product. Guests and registered customers are eligible. |
-| Schedule | One message per order, sent N days after its most recent shipment. If a shipment is added later, the due date moves to N days after that shipment. |
+| Schedule | One message per order, sent N days after its most recent shipment. If a shipment is added later, the due date moves to N days after that shipment. Orders whose last shipment is more than N + 30 days old are skipped, so enabling the module never mails historical orders. A failed send is retried on the next cron run, at most 3 times, then marked failed (status 3). |
 | Review link | Each product link opens Magento's core product review form. The invitation token is opaque and order-scoped; it does not log the shopper in or submit a review on their behalf. |
 | Verified buyer | Associate logged-in customer reviews with matching shipped order items for the same customer and product. Display a “Verified Buyer” label on associated reviews. Guest reviews cannot be matched because core does not retain a reviewer email. |
 | Repeat orders | A new order can receive its own invitation, including for a product previously purchased. |

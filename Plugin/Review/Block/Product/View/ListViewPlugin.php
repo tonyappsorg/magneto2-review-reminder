@@ -15,6 +15,10 @@ class ListViewPlugin
 
     public function afterGetReviewsCollection(ListView $subject, Collection $collection): Collection
     {
+        // ListView::_prepareLayout() asks for the collection before the pager applies its limit; loading it here would drop pagination.
+        if (!$collection->isLoaded()) {
+            return $collection;
+        }
         $items = $collection->getItems();
         $ids = array_map(static fn ($review): int => (int) $review->getId(), $items);
         $verifiedIds = array_flip($this->verifiedReview->getVerifiedIds($ids));

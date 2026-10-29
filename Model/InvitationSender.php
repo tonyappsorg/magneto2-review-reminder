@@ -56,6 +56,7 @@ class InvitationSender
                     $this->sendOrder($row, $token, $storeId);
                     $this->invitation->markSent($orderId);
                 } catch (\Throwable $e) {
+                    $this->invitation->recordFailure($orderId);
                     $this->logger->error('Review invitation for order ' . $orderId . ' failed: ' . $e->getMessage());
                 } finally {
                     $this->emulation->stopEnvironmentEmulation();

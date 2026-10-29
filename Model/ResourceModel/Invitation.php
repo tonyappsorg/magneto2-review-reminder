@@ -7,6 +7,10 @@ use Magento\Framework\App\ResourceConnection;
 
 class Invitation
 {
+    /** Orders shipped longer ago than delay + this window are never invited, so enabling the module does not mail old orders. */
+    public const MAX_AGE_DAYS = 30;
+    public const MAX_ATTEMPTS = 3;
+
     public function __construct(private readonly ResourceConnection $resource)
     {
     }
@@ -29,6 +33,7 @@ class Invitation
             ->where('NOT EXISTS (?)', $connection->select()->from(['optout' => $invitation], [new \Magento\Framework\DB\Sql\Expression('1')])
                 ->where('optout.email = o.customer_email')->where('optout.status = 2'))
             ->group(['o.entity_id', 'r.entity_id', 'r.token'])->having('MAX(s.created_at) <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? DAY)', $delayDays)
+            ->having('MAX(s.created_at) > DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? DAY)', $delayDays + self::MAX_AGE_DAYS)
             ->order('MAX(s.created_at) ASC')->limit($limit);
         return $connection->fetchAll($select);
     }
@@ -46,6 +51,20 @@ class Invitation
         $this->resource->getConnection()->update(
             $this->resource->getTableName('tonyapps_review_reminder'),
             ['status' => 1, 'sent_at' => new \Magento\Framework\DB\Sql\Expression('UTC_TIMESTAMP()')],
+            ['order_id = ?' => $orderId, 'status = ?' => 0]
+        );
+    }
+
+    /** Status 3 after MAX_ATTEMPTS failures takes the order out of the queue. */
+    public function recordFailure(int $orderId): void
+    {
+        // status is assigned before attempts so both read the pre-update value.
+        $this->resource->getConnection()->update(
+            $this->resource->getTableName('tonyapps_review_reminder'),
+            [
+                'status' => new \Magento\Framework\DB\Sql\Expression('IF(attempts + 1 >= ' . self::MAX_ATTEMPTS . ', 3, 0)'),
+                'attempts' => new \Magento\Framework\DB\Sql\Expression('attempts + 1'),
+            ],
             ['order_id = ?' => $orderId, 'status = ?' => 0]
         );
     }

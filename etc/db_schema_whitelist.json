@@ -1,0 +1,11 @@
+{
+    "tonyapps_review_reminder": {
+        "column": {"attempts": true, "email": true, "entity_id": true, "order_id": true, "sent_at": true, "status": true, "store_id": true, "token": true},
+        "index": {"TONYAPPS_REVIEW_REMINDER_EMAIL_STATUS": true},
+        "constraint": {"PRIMARY": true, "TONYAPPS_REVIEW_REMINDER_ORDER": true, "TONYAPPS_REVIEW_REMINDER_TOKEN": true}
+    },
+    "tonyapps_review_reminder_verified_review": {
+        "column": {"order_id": true, "order_item_id": true, "review_id": true},
+        "constraint": {"PRIMARY": true, "TONYAPPS_RR_VERIFIED_REVIEW_ID_REVIEW_ID": true, "TONYAPPS_RR_VERIFIED_REVIEW_ORDER_ID_ORDER_ID": true, "TONYAPPS_RR_VERIFIED_REVIEW_ITEM_ID_ITEM_ID": true}
+    }
+}

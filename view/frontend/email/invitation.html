@@ -3,8 +3,8 @@
 {{template config_path="design/email/header_template"}}
 <p>{{trans "Hi %name," name=$customerName}}</p>
 <p>{{trans "You recently received order #%order. Would you share your thoughts?" order=$orderIncrementId}}</p>
-{{foreach products as product}}
+{{for product in products}}
 <p><a href="{{var product.url}}">{{var product.name}}</a></p>
-{{/foreach}}
+{{/for}}
 <p><small><a href="{{var unsubscribeUrl}}">{{trans "Stop review invitations"}}</a></small></p>
 {{template config_path="design/email/footer_template"}}
