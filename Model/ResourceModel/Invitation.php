@@ -25,8 +25,8 @@ class Invitation
         $order = $this->resource->getTableName('sales_order');
         $shipment = $this->resource->getTableName('sales_shipment');
         $invitation = $this->resource->getTableName('tonyapps_review_reminder');
-        $select = $connection->select()->from(['o' => $order], ['entity_id', 'store_id', 'customer_email', 'customer_firstname', 'customer_id', 'increment_id', 'invitation_id' => 'r.entity_id', 'token' => 'r.token'])
-            ->joinInner(['s' => $shipment], 's.order_id = o.entity_id', ['shipped_at' => new \Magento\Framework\DB\Sql\Expression('MAX(s.created_at)')])
+        $select = $connection->select()->from(['o' => $order], ['entity_id', 'store_id', 'customer_email', 'customer_firstname', 'increment_id', 'token' => 'r.token'])
+            ->joinInner(['s' => $shipment], 's.order_id = o.entity_id', [])
             ->joinLeft(['r' => $invitation], 'r.order_id = o.entity_id', [])
             ->where('o.store_id IN (?)', $storeIds)->where('o.customer_email IS NOT NULL')->where("o.customer_email <> ''")
             ->where('o.state <> ?', 'canceled')->where('(r.entity_id IS NULL OR r.status = 0)')

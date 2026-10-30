@@ -31,19 +31,14 @@ class InvitationSender
 
     public function send(): void
     {
-        $storeIds = [];
         foreach ($this->storeManager->getStores() as $store) {
             $id = (int) $store->getId();
-            if ($this->config->enabled($id)) {
-                $storeIds[] = $id;
+            if (!$this->config->enabled($id)) {
+                continue;
             }
-        }
-        if (!$storeIds) {
-            return;
-        }
 
-        // Process stores individually because delay is store scoped.
-        foreach ($storeIds as $storeId) {
+            // Process stores individually because delay is store scoped.
+            $storeId = $id;
             foreach ($this->invitation->getDueOrders([$storeId], $this->config->delayDays($storeId)) as $row) {
                 $orderId = (int) $row['entity_id'];
                 $token = (string) ($row['token'] ?? '');
