@@ -29,11 +29,13 @@ class Invitation
             ->joinInner(['s' => $shipment], 's.order_id = o.entity_id', [])
             ->joinLeft(['r' => $invitation], 'r.order_id = o.entity_id', [])
             ->where('o.store_id IN (?)', $storeIds)->where('o.customer_email IS NOT NULL')->where("o.customer_email <> ''")
-            ->where('o.state <> ?', 'canceled')->where('(r.entity_id IS NULL OR r.status = 0)')
+            ->where('o.state NOT IN (?)', [\Magento\Sales\Model\Order::STATE_CANCELED, \Magento\Sales\Model\Order::STATE_CLOSED])
+            ->where('(r.entity_id IS NULL OR r.status = 0)')
+            // In WHERE (not HAVING) so the shipment created_at index bounds the scan; MAX() is unchanged because the newest shipment always passes.
+            ->where('s.created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? DAY)', $delayDays + self::MAX_AGE_DAYS)
             ->where('NOT EXISTS (?)', $connection->select()->from(['optout' => $invitation], [new \Magento\Framework\DB\Sql\Expression('1')])
                 ->where('optout.email = o.customer_email')->where('optout.status = 2'))
             ->group(['o.entity_id', 'r.entity_id', 'r.token'])->having('MAX(s.created_at) <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? DAY)', $delayDays)
-            ->having('MAX(s.created_at) > DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? DAY)', $delayDays + self::MAX_AGE_DAYS)
             ->order('MAX(s.created_at) ASC')->limit($limit);
         return $connection->fetchAll($select);
     }

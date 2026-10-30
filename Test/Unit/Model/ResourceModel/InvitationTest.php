@@ -22,11 +22,31 @@ class InvitationTest extends TestCase
 
     public function testDueOrdersSkipShipmentsOlderThanTheInvitationWindow(): void
     {
-        $having = [];
+        [$where, $having] = $this->captureDueOrdersQuery();
+
+        self::assertContains(['s.created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? DAY)', 7 + Invitation::MAX_AGE_DAYS], $where);
+        self::assertSame([['MAX(s.created_at) <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? DAY)', 7]], $having);
+    }
+
+    public function testDueOrdersSkipCanceledAndClosedOrders(): void
+    {
+        [$where] = $this->captureDueOrdersQuery();
+
+        self::assertContains(['o.state NOT IN (?)', ['canceled', 'closed']], $where);
+    }
+
+    /** @return array{0: array<int, array{0: string, 1: mixed}>, 1: array<int, array{0: string, 1: mixed}>} */
+    private function captureDueOrdersQuery(): array
+    {
+        $where = $having = [];
         $select = $this->createMock(Select::class);
-        foreach (['from', 'joinInner', 'joinLeft', 'where', 'group', 'order', 'limit'] as $method) {
+        foreach (['from', 'joinInner', 'joinLeft', 'group', 'order', 'limit'] as $method) {
             $select->method($method)->willReturnSelf();
         }
+        $select->method('where')->willReturnCallback(function ($cond, $value = null) use (&$where, $select) {
+            $where[] = [(string) $cond, $value];
+            return $select;
+        });
         $select->method('having')->willReturnCallback(function (string $cond, $value) use (&$having, $select) {
             $having[] = [$cond, $value];
             return $select;
@@ -37,10 +57,7 @@ class InvitationTest extends TestCase
 
         (new Invitation($this->resource($connection)))->getDueOrders([1], 7);
 
-        self::assertSame([
-            ['MAX(s.created_at) <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? DAY)', 7],
-            ['MAX(s.created_at) > DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? DAY)', 7 + Invitation::MAX_AGE_DAYS],
-        ], $having);
+        return [$where, $having];
     }
 
     public function testRecordFailureRetiresInvitationAfterMaxAttempts(): void

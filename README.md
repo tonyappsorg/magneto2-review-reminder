@@ -25,6 +25,12 @@ Automatically invite customers to review products from orders that have shipped.
 
 Invitation tokens are random, high-entropy credentials and are stored uniquely. They grant access only to the invitation and unsubscribe action, never to an account or order management. Escape customer and product data in email and storefront output. Do not persist review text outside Magento's review tables.
 
+## 2026-10-30 review fixes
+
+- The due-orders query filters `sales_shipment.created_at` in `WHERE` (not only `HAVING`), so the cron no longer scans the whole shipment history every 15 minutes.
+- Closed (fully refunded) orders are skipped as well as canceled ones.
+- Not changed: one invitation per order stays the design, so items shipped after the invitation was sent get no second invitation. "Verified Buyer" is not re-checked after a refund (product decision).
+
 ## Install
 
 ```sh
