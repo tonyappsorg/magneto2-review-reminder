@@ -15,5 +15,8 @@ class InvitationEmailTest extends TestCase
         self::assertSame(1, preg_match(Template::LOOP_PATTERN, $html, $match));
         self::assertSame('products', trim($match['loopData']));
         self::assertStringContainsString('{{var product.url}}', $match['loopBody']);
+        self::assertStringContainsString('{{var product.image}}', $match['loopBody']);
+        // The for directive resolves only variables; a {{trans}} in the loop body renders empty.
+        self::assertStringNotContainsString('{{trans', $match['loopBody']);
     }
 }

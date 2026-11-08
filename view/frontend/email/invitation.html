@@ -1,10 +1,37 @@
 <!--@subject {{trans "How are you enjoying your purchase?"}} @-->
-<!--@vars {"var customerName":"Customer Name","var products":"Products","var unsubscribeUrl":"Unsubscribe URL","var orderIncrementId":"Order Number"} @-->
+<!--@vars {"var customerName":"Customer Name","var products":"Products","var unsubscribeUrl":"Unsubscribe URL","var orderIncrementId":"Order Number","var storeName":"Store Name","var reviewButtonLabel":"Review Button Label"} @-->
 {{template config_path="design/email/header_template"}}
-<p>{{trans "Hi %name," name=$customerName}}</p>
-<p>{{trans "You recently received order #%order. Would you share your thoughts?" order=$orderIncrementId}}</p>
-{{for product in products}}
-<p><a href="{{var product.url}}">{{var product.name}}</a></p>
-{{/for}}
-<p><small><a href="{{var unsubscribeUrl}}">{{trans "Stop review invitations"}}</a></small></p>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+    <tr>
+        <td style="padding-bottom:20px;">
+            <h1 style="margin:0 0 12px;font-size:24px;font-weight:600;">{{trans "How did we do, %name?" name=$customerName}}</h1>
+            <p style="margin:0 0 8px;">{{trans "Your order #%order from %store has arrived. We'd love to hear what you think." order=$orderIncrementId store=$storeName}}</p>
+            <p style="margin:0;color:#666666;">{{trans "It only takes a minute, and your honest review helps other shoppers choose with confidence."}}</p>
+        </td>
+    </tr>
+    {{for product in products}}
+    <tr>
+        <td style="padding:16px 0;border-top:1px solid #e5e5e5;">
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                <tr>
+                    <td width="120" valign="top" style="padding-right:20px;">
+                        <a href="{{var product.url}}"><img src="{{var product.image}}" alt="{{var product.name}}" width="120" style="display:block;width:120px;height:auto;border:0;"/></a>
+                    </td>
+                    <td valign="middle">
+                        <p style="margin:0 0 8px;font-size:16px;font-weight:600;">{{var product.name}}</p>
+                        <p style="margin:0 0 12px;font-size:24px;letter-spacing:4px;line-height:1;"><a href="{{var product.url}}" style="color:#f5a623;text-decoration:none;">&#9733;&#9733;&#9733;&#9733;&#9733;</a></p>
+                        <a href="{{var product.url}}" style="display:inline-block;padding:10px 20px;background:#1979c3;color:#ffffff;text-decoration:none;font-weight:600;border-radius:3px;">{{var reviewButtonLabel}}</a>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    {{/for}}
+    <tr>
+        <td style="padding-top:20px;border-top:1px solid #e5e5e5;">
+            <p style="margin:0 0 8px;">{{trans "Thank you for shopping with %store!" store=$storeName}}</p>
+            <p style="margin:0;font-size:12px;color:#999999;">{{trans "Don't want these emails?"}} <a href="{{var unsubscribeUrl}}" style="color:#999999;">{{trans "Stop review invitations"}}</a></p>
+        </td>
+    </tr>
+</table>
 {{template config_path="design/email/footer_template"}}

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Tonyapps\ReviewReminder\Model;
 
+use Magento\Catalog\Helper\Image;
 use Magento\Framework\App\Area;
 use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Framework\Math\Random;
@@ -25,7 +26,8 @@ class InvitationSender
         private readonly StoreManagerInterface $storeManager,
         private readonly Emulation $emulation,
         private readonly TransportBuilder $transportBuilder,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly Image $imageHelper
     ) {
     }
 
@@ -76,6 +78,7 @@ class InvitationSender
             $products[] = [
                 'name' => (string) $item->getName(),
                 'url' => $product->getProductUrl() . '#review-form',
+                'image' => $this->imageHelper->init($product, 'category_page_grid')->getUrl(),
             ];
         }
         if (!$products) {
@@ -90,6 +93,9 @@ class InvitationSender
                 'products' => $products,
                 'unsubscribeUrl' => $unsubscribeUrl,
                 'orderIncrementId' => (string) $row['increment_id'],
+                'storeName' => (string) $store->getFrontendName(),
+                // {{trans}} does not run inside {{for}}; the template reads this variable instead.
+                'reviewButtonLabel' => (string) __('Write a review'),
             ])
             ->setFromByScope($this->config->identity($storeId), $storeId)
             ->addTo((string) $row['customer_email'])
