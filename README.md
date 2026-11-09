@@ -31,6 +31,14 @@ Invitation tokens are random, high-entropy credentials and are stored uniquely. 
 - Closed (fully refunded) orders are skipped as well as canceled ones.
 - Not changed: one invitation per order stays the design, so items shipped after the invitation was sent get no second invitation. "Verified Buyer" is not re-checked after a refund (product decision).
 
+## Emails
+
+Screenshots of the emails as sent (Luma theme, 2026-11-09). Source images are in `docs/emails/`.
+
+**Review invitation**
+
+![Review invitation](docs/emails/invitation.png)
+
 ## Install
 
 ```sh
