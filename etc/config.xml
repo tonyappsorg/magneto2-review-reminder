@@ -1,4 +1,4 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store/etc/config.xsd">
-    <default><tonyapps_reviewreminder><general><enabled>0</enabled><delay_days>7</delay_days></general><email><identity>sales</identity><template>tonyapps_reviewreminder_invitation</template></email></tonyapps_reviewreminder></default>
+    <default><tonyapps_reviewreminder><general><enabled>0</enabled><delay_days>7</delay_days></general><email><identity>sales</identity><template>tonyapps_reviewreminder_email_template</template></email></tonyapps_reviewreminder></default>
 </config>

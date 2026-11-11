@@ -63,3 +63,7 @@ vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist app/code/Tonyapps/ReviewRe
 This module's emails can be redesigned visually with the [Email Designer](https://github.com/tonyappsorg/magento2-email-designer) (`Tonyapps_EmailDesigner`): open **Marketing › Communications ›
 Email Designer**, start a design for the email and save it. Then pick the saved design in this module's email
 template setting under **Stores › Configuration**. The default template is used until a design is picked.
+
+The default template's ID is `tonyapps_reviewreminder_email_template` (was `tonyapps_reviewreminder_invitation`). The template setting
+lists the default under an ID made from its config path, so the old ID made the setting fail with "Email template
+is not defined" and no other template could be picked. Theme overrides keep working (they go by file name).
