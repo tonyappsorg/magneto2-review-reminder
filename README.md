@@ -1,69 +1,70 @@
-# Tonyapps_ReviewReminder
+# Review Reminder for Magento 2
 
-Automatically invite customers to review products from orders that have shipped. Magento Open Source supports product reviews, but it does not send post-purchase review requests or label a review as coming from a verified purchaser.
+Ask customers for a product review a few days after their order ships, and mark reviews from real buyers as "Verified Buyer".
 
-## Scope and decisions
+Magento Open Source supports product reviews, but it never asks for one after a purchase and can't tell a buyer's review from anyone else's. This module sends a review invitation after shipment and adds a "Verified Buyer" label to reviews written by customers who bought the product.
 
-| Feature | Decision |
-|---|---|
-| Who qualifies | Customer orders with a shipment and at least one shipped, reviewable product. Guests and registered customers are eligible. |
-| Schedule | One message per order, sent N days after its most recent shipment. If a shipment is added later, the due date moves to N days after that shipment. Orders whose last shipment is more than N + 30 days old are skipped, so enabling the module never mails historical orders. A failed send is retried on the next cron run, at most 3 times, then marked failed (status 3). |
-| Review link | Each product link opens Magento's core product review form. The invitation token is opaque and order-scoped; it does not log the shopper in or submit a review on their behalf. |
-| Verified buyer | Associate logged-in customer reviews with matching shipped order items for the same customer and product. Display a “Verified Buyer” label on associated reviews. Guest reviews cannot be matched because core does not retain a reviewer email. |
-| Repeat orders | A new order can receive its own invitation, including for a product previously purchased. |
-| Opt-out | Include a tokenized unsubscribe link. GET only displays confirmation; POST opts that email address out of all future invitations. |
-| Configuration | Store-scoped enable switch, delay in days, sender identity, and email template. Disabled by default. |
-| Data | Dedicated invitation table with unique order and token. Keep core order, shipment, and review records as the source of truth. |
+## Features
 
-## Phases
+- **Timed invitation**: one email per order, sent a set number of days (default 7) after the order's most recent shipment. If another shipment follows, the invitation waits for it.
+- **Guests and customers**: anyone who placed an order with an email address is invited.
+- **Straight to the review form**: each shipped product in the email links to the product's review form; the page opens the Reviews tab and scrolls to the form.
+- **Verified Buyer label**: reviews from signed-in customers who received the product show a "Verified Buyer" label on the product page.
+- **Safe to switch on**: orders whose last shipment is more than 30 days past the delay are skipped, so enabling the module doesn't email your order history.
+- **Skips what shouldn't be mailed**: canceled and fully refunded (closed) orders are not invited.
+- **Unsubscribe that respects the shopper**: a link in every email opts the address out of all future invitations, after a confirm click (so mail scanners can't unsubscribe anyone).
+- **Reliable sending**: a failed send is retried on the next cron run, up to 3 times.
+- **Repeat customers welcome**: every new order gets its own invitation, even for a product bought before.
 
-1. **Invitation lifecycle:** schema, store configuration, cron selection, shipment-based due date, email with core review links, unsubscribe, and focused unit tests.
-2. **Verified buyer (implemented):** associate reviews from signed-in customers with matching shipped order items, add the storefront badge, and cover customer/guest handling with unit tests. Core does not retain guest reviewer emails, so guest reviews remain unmarked.
-3. **Manual verification:** install/upgrade check, exercise cron and review flow on a Magento instance, and inspect storefront output.
+## How it works
 
-## Security and privacy
+1. You ship an order as usual.
+2. Every 15 minutes, cron finds orders whose last shipment is old enough and emails the customer an invitation listing the shipped products.
+3. The customer clicks a product and writes the review in Magento's standard review form; reviews are moderated as usual.
+4. When a signed-in customer's review matches a product they received, the review shows "Verified Buyer".
 
-Invitation tokens are random, high-entropy credentials and are stored uniquely. They grant access only to the invitation and unsubscribe action, never to an account or order management. Escape customer and product data in email and storefront output. Do not persist review text outside Magento's review tables.
+## Screenshots
 
-## 2026-10-30 review fixes
-
-- The due-orders query filters `sales_shipment.created_at` in `WHERE` (not only `HAVING`), so the cron no longer scans the whole shipment history every 15 minutes.
-- Closed (fully refunded) orders are skipped as well as canceled ones.
-- Not changed: one invitation per order stays the design, so items shipped after the invitation was sent get no second invitation. "Verified Buyer" is not re-checked after a refund (product decision).
-
-## 2026-11-10 QA fix
-
-The invitation's product links end in `#review-form`, but Luma marks the Reviews tab active for that hash and keeps
-its content hidden, so a shopper arriving from the email saw no form. `view/frontend/web/js/open-review-form.js`
-(loaded on product pages) opens the Reviews tab and scrolls to the form when the page is reached with that hash.
-
-## Emails
-
-Screenshots of the emails as sent (Luma theme, 2026-11-09). Source images are in `docs/emails/`.
+Emails as sent (Luma theme, 2026-11-09).
 
 **Review invitation**
 
 ![Review invitation](docs/emails/invitation.png)
 
-## Install
+## Good to know
+
+- Off by default; enable it per store.
+- One invitation per order: items shipped after the invitation was sent don't trigger a second one.
+- Guest reviews can't be marked "Verified Buyer", because Magento doesn't keep a guest reviewer's email.
+- "Verified Buyer" is not removed if the order is refunded later.
+- The email link doesn't log the shopper in or write anything on their behalf.
+- Requires Magento cron to be running.
+- Built and tested on the Luma theme; Hyvä has not been checked.
+
+## Requirements
+
+- Magento Open Source 2.4.8
+- PHP 8.3 or 8.4
+- Magento modules: Sales, Review
+
+## Installation
 
 ```sh
+composer require tonyapps/module-review-reminder
 bin/magento module:enable Tonyapps_ReviewReminder
 bin/magento setup:upgrade
 ```
 
-## Tests
+Make sure Magento cron is running.
 
-```sh
-vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist app/code/Tonyapps/ReviewReminder/Test/Unit
-```
+## Configuration
 
-## Redesigning the emails
+- **Stores › Configuration › Sales › Review Reminder**: enable, days after shipment, sender and email template.
 
-This module's emails can be redesigned visually with the [Email Designer](https://github.com/tonyappsorg/magento2-email-designer) (`Tonyapps_EmailDesigner`): open **Marketing › Communications ›
-Email Designer**, start a design for the email and save it. Then pick the saved design in this module's email
-template setting under **Stores › Configuration**. The default template is used until a design is picked.
+### Redesigning the email
 
-The default template's ID is `tonyapps_reviewreminder_email_template` (was `tonyapps_reviewreminder_invitation`). The template setting
-lists the default under an ID made from its config path, so the old ID made the setting fail with "Email template
-is not defined" and no other template could be picked. Theme overrides keep working (they go by file name).
+The email can be redesigned visually with the [Email Designer](https://github.com/tonyappsorg/magento2-email-designer) (`Tonyapps_EmailDesigner`): open **Marketing › Communications › Email Designer**, start a design for the email and save it, then pick the saved design in the **Template** setting under **Stores › Configuration**. The default template is used until a design is picked.
+
+## For developers
+
+Architecture, decisions, data model and tests are in [AGENTS.md](AGENTS.md).
