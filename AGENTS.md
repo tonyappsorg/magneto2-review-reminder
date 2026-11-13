@@ -18,7 +18,7 @@ Why it exists: Magento Open Source supports product reviews, but it does not sen
 
 | Feature | Decision |
 |---|---|
-| Who qualifies | Customer orders with a shipment and at least one shipped, reviewable product. Guests and registered customers are eligible. |
+| Who qualifies | Customer orders with a shipment and at least one shipped, reviewable product (enabled, visible individually, in the store's website). Stores with core's *Enable Reviews* off are skipped. Guests and registered customers are eligible. |
 | Schedule | One message per order, sent N days after its most recent shipment. If a shipment is added later, the due date moves to N days after that shipment. Orders whose last shipment is more than N + 30 days old are skipped, so enabling the module never mails historical orders. A failed send is retried on the next cron run, at most 3 times, then marked failed (status 3). |
 | Review link | Each product link opens Magento's core product review form. The invitation token is opaque and order-scoped; it does not log the shopper in or submit a review on their behalf. |
 | Verified buyer | Associate logged-in customer reviews with matching shipped order items for the same customer and product. Display a "Verified Buyer" label on associated reviews. Guest reviews cannot be matched because core does not retain a reviewer email. |
@@ -31,7 +31,7 @@ Why it exists: Magento Open Source supports product reviews, but it does not sen
 
 - Cron `tonyapps_review_reminder_send` → `Model\InvitationSender::send`, `*/15 * * * *`, group `default`. Per store (delay is store-scoped): `Model\ResourceModel\Invitation::getDueOrders($storeIds, $delayDays, $limit = 500)`, creates the invitation row with a `Random::getUniqueHash()` token if missing, sends in frontend store emulation, then `markSent()`; on any `Throwable` `recordFailure()` (status becomes 3 once `attempts + 1 >= MAX_ATTEMPTS` (3), else stays 0) and logs.
 - Due-orders query: `sales_order` ⋈ `sales_shipment` ⟕ invitation; store in list, non-empty `customer_email`, state not `canceled`/`closed`, no invitation or status 0, `s.created_at > UTC_TIMESTAMP() - (delay + MAX_AGE_DAYS(30)) DAY` in `WHERE`, email not opted out (`NOT EXISTS` row with same email and status 2), grouped per order `HAVING MAX(s.created_at) <= now - delay`, oldest first.
-- Email products: visible order items with `qty_shipped > 0` and an existing product; link = product URL + `#review-form`, image `category_page_grid`. Template vars: `customerName` (fallback "there"), `products`, `unsubscribeUrl`, `orderIncrementId`.
+- Email products: visible order items with `qty_shipped > 0` whose product exists, is enabled, visible individually and assigned to the store's website; none → no email, `markSkipped()` (status 4). Stores where `catalog/review/active` is off are not processed; link = product URL + `#review-form`, image `category_page_grid`. Template vars: `customerName` (fallback "there"), `products`, `unsubscribeUrl`, `orderIncrementId`.
 - Unsubscribe: `Controller\Reminder\Unsubscribe` (GET confirm page, POST → `Invitation::unsubscribe($email)` sets status 2) then `Controller\Reminder\Unsubscribed`. Layouts `reviewreminder_reminder_unsubscribe(d).xml`, templates `unsubscribe.phtml`, `unsubscribed.phtml`.
 - Verified buyer: `Observer\MarkVerifiedBuyer` on `review_save_after` → `Model\ResourceModel\VerifiedReview::associate($reviewId, $customerId, $productId)`: latest shipped order item of that customer and product (order not canceled) is stored in `tonyapps_review_reminder_verified_review`. Display: `Plugin\Review\Block\Product\View\ListViewPlugin` (frontend `di.xml`, on `Magento\Review\Block\Product\View\ListView`) fetches `getVerifiedIds()`; template `product/view/list.phtml` replaces core's via `review_product_list.xml` and `review_product_listajax.xml` (block `product.info.product_additional_data`) and prints the "Verified Buyer" span.
 - Review-form opener: `view/frontend/web/js/open-review-form.js`, loaded on product pages by `catalog_product_view.xml` (`before.body.end`, `product/open-review-form.phtml`); opens the Reviews tab and scrolls to the form when the URL hash is `#review-form`.
@@ -39,7 +39,7 @@ Why it exists: Magento Open Source supports product reviews, but it does not sen
 
 ## Data model
 
-- `tonyapps_review_reminder`: `entity_id`, `order_id` (unique `TONYAPPS_REVIEW_REMINDER_ORDER`, no FK), `store_id`, `email`, `token` (unique, 64), `status` (0 pending, 1 sent, 2 email opted out, 3 failed), `attempts`, `sent_at`; index (`email`, `status`). Opt-out is a status-2 row, matched by email.
+- `tonyapps_review_reminder`: `entity_id`, `order_id` (unique `TONYAPPS_REVIEW_REMINDER_ORDER`, no FK), `store_id`, `email`, `token` (unique, 64), `status` (0 pending, 1 sent, 2 email opted out, 3 failed, 4 nothing to review), `attempts`, `sent_at`; index (`email`, `status`). Opt-out is a status-2 row, matched by email.
 - `tonyapps_review_reminder_verified_review`: `review_id` (PK, FK `review` CASCADE), `order_id` (FK `sales_order` CASCADE), `order_item_id` (FK `sales_order_item` CASCADE).
 
 ## Configuration and ACL
@@ -64,8 +64,6 @@ Email template ID: `tonyapps_reviewreminder_email_template` (file `invitation.ht
 ## Known limitations and open points
 
 - Guest reviews are never marked verified (core keeps no reviewer email).
-- "Reviewable" is not checked beyond `qty_shipped > 0` and the product still existing; no check of product visibility or review settings.
-- If an order has no qualifying product at send time, no email is sent but the row is still marked sent.
 - Hyvä not checked.
 
 ## Tests
@@ -87,6 +85,7 @@ QA tip from 2026-11-08: set the delay to 1 day and backdate a test shipment's `s
 
 ## Change history
 
+- **2026-11-13 reviewable products**: products that are disabled, not visible individually or not in the store's website are left out of the invitation, and stores with *Enable Reviews* off get none. An order with nothing left to review is marked status 4 (nothing to review) instead of 1 (sent). Tests in `InvitationSenderTest`, `InvitationTest`.
 - **2026-11-11 template ID rename**: default template ID is `tonyapps_reviewreminder_email_template` (was `tonyapps_reviewreminder_invitation`). The template setting lists the default under an ID made from its config path, so the old ID made the setting fail with "Email template is not defined" and no other template could be picked. Theme overrides keep working (they go by file name). Lets stores pick Email Designer designs.
 - **2026-11-10 QA fix**: the invitation's product links end in `#review-form`, but Luma marks the Reviews tab active for that hash and keeps its content hidden, so a shopper arriving from the email saw no form. `view/frontend/web/js/open-review-form.js` (loaded on product pages) opens the Reviews tab and scrolls to the form when the page is reached with that hash.
 - **2026-11-09 email screenshot** added: `docs/emails/invitation.png` (Luma, emails as sent 2026-11-09). The email itself was redesigned during the 2026-11-08 QA (`04442bb`, per ../WORKPLAN.md).

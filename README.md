@@ -11,7 +11,7 @@ Magento Open Source supports product reviews, but it never asks for one after a 
 - **Straight to the review form**: each shipped product in the email links to the product's review form; the page opens the Reviews tab and scrolls to the form.
 - **Verified Buyer label**: reviews from signed-in customers who received the product show a "Verified Buyer" label on the product page.
 - **Safe to switch on**: orders whose last shipment is more than 30 days past the delay are skipped, so enabling the module doesn't email your order history.
-- **Skips what shouldn't be mailed**: canceled and fully refunded (closed) orders are not invited.
+- **Skips what shouldn't be mailed**: canceled and fully refunded (closed) orders are not invited, and the email lists only products customers can still open and review. No reviewable products, no email.
 - **Unsubscribe that respects the shopper**: a link in every email opts the address out of all future invitations, after a confirm click (so mail scanners can't unsubscribe anyone).
 - **Reliable sending**: a failed send is retried on the next cron run, up to 3 times.
 - **Repeat customers welcome**: every new order gets its own invitation, even for a product bought before.

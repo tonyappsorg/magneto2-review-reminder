@@ -27,4 +27,10 @@ class Config extends AbstractHelper
     {
         return (string) $this->scopeConfig->getValue('tonyapps_reviewreminder/email/template', ScopeInterface::SCOPE_STORE, $storeId);
     }
+
+    /** Core's Catalog > Product Reviews > Enable Reviews. */
+    public function reviewsEnabled(int $storeId): bool
+    {
+        return $this->scopeConfig->isSetFlag('catalog/review/active', ScopeInterface::SCOPE_STORE, $storeId);
+    }
 }

@@ -75,6 +75,15 @@ class InvitationTest extends TestCase
         (new Invitation($this->resource($connection)))->recordFailure(5);
     }
 
+    public function testSkippedOrderLeavesTheQueueWithoutASentDate(): void
+    {
+        $connection = $this->createMock(AdapterInterface::class);
+        $connection->expects(self::once())->method('update')
+            ->with('tonyapps_review_reminder', ['status' => 4], ['order_id = ?' => 5, 'status = ?' => 0]);
+
+        (new Invitation($this->resource($connection)))->markSkipped(5);
+    }
+
     private function resource(AdapterInterface $connection): ResourceConnection
     {
         $resource = $this->createMock(ResourceConnection::class);

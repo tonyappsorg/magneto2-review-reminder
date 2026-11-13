@@ -30,6 +30,7 @@ class InvitationSenderTest extends TestCase
         $storeManager->method('getStores')->willReturn([$store]);
         $config = $this->createMock(Config::class);
         $config->method('enabled')->willReturn(true);
+        $config->method('reviewsEnabled')->willReturn(true);
         $config->method('delayDays')->willReturn(7);
 
         $invitation = $this->createMock(Invitation::class);
@@ -60,12 +61,14 @@ class InvitationSenderTest extends TestCase
         $store = $this->createMock(Store::class);
         $store->method('getId')->willReturn(1);
         $store->method('getFrontendName')->willReturn('Luma');
+        $store->method('getWebsiteId')->willReturn(1);
         $store->method('getUrl')->willReturn('https://shop/unsubscribe');
         $storeManager = $this->createMock(StoreManagerInterface::class);
         $storeManager->method('getStores')->willReturn([$store]);
         $storeManager->method('getStore')->willReturn($store);
         $config = $this->createMock(Config::class);
         $config->method('enabled')->willReturn(true);
+        $config->method('reviewsEnabled')->willReturn(true);
 
         $invitation = $this->createMock(Invitation::class);
         $invitation->method('getDueOrders')->willReturn([[
@@ -77,6 +80,9 @@ class InvitationSenderTest extends TestCase
         $product = $this->createMock(Product::class);
         $product->method('getId')->willReturn(9);
         $product->method('getProductUrl')->willReturn('https://shop/tank.html');
+        $product->method('getStatus')->willReturn(1);
+        $product->method('isVisibleInSiteVisibility')->willReturn(true);
+        $product->method('getWebsiteIds')->willReturn(['1']);
         $item = $this->createMock(Item::class);
         $item->method('getQtyShipped')->willReturn(1.0);
         $item->method('getProduct')->willReturn($product);
@@ -116,6 +122,90 @@ class InvitationSenderTest extends TestCase
             $transportBuilder,
             $this->createMock(LoggerInterface::class),
             $image
+        ))->send();
+    }
+
+    /** @return array<string, array{int, bool, string[]}> */
+    public static function unreviewableProducts(): array
+    {
+        return [
+            'disabled' => [2, true, ['1']],
+            'not visible individually' => [1, false, ['1']],
+            'not in this website' => [1, true, ['2']],
+        ];
+    }
+
+    /**
+     * @dataProvider unreviewableProducts
+     * @param string[] $websiteIds
+     */
+    public function testOrderWithNothingToReviewIsSkippedNotMarkedSent(int $status, bool $visible, array $websiteIds): void
+    {
+        $store = $this->createMock(Store::class);
+        $store->method('getId')->willReturn(1);
+        $store->method('getWebsiteId')->willReturn(1);
+        $storeManager = $this->createMock(StoreManagerInterface::class);
+        $storeManager->method('getStores')->willReturn([$store]);
+        $storeManager->method('getStore')->willReturn($store);
+        $config = $this->createMock(Config::class);
+        $config->method('enabled')->willReturn(true);
+        $config->method('reviewsEnabled')->willReturn(true);
+        $invitation = $this->createMock(Invitation::class);
+        $invitation->method('getDueOrders')->willReturn([['entity_id' => 5, 'token' => 'abc', 'customer_email' => 'a@example.com']]);
+        $invitation->expects(self::never())->method('markSent');
+        $invitation->expects(self::once())->method('markSkipped')->with(5);
+
+        $product = $this->createMock(Product::class);
+        $product->method('getId')->willReturn(9);
+        $product->method('getStatus')->willReturn($status);
+        $product->method('isVisibleInSiteVisibility')->willReturn($visible);
+        $product->method('getWebsiteIds')->willReturn($websiteIds);
+        $item = $this->createMock(Item::class);
+        $item->method('getQtyShipped')->willReturn(1.0);
+        $item->method('getProduct')->willReturn($product);
+        $order = $this->createMock(Order::class);
+        $order->method('load')->willReturnSelf();
+        $order->method('getAllVisibleItems')->willReturn([$item]);
+        $orderFactory = $this->getMockBuilder(OrderFactory::class)->disableOriginalConstructor()->onlyMethods(['create'])->getMock();
+        $orderFactory->method('create')->willReturn($order);
+        $transportBuilder = $this->createMock(TransportBuilder::class);
+        $transportBuilder->expects(self::never())->method('getTransport');
+
+        (new InvitationSender(
+            $invitation,
+            $config,
+            $orderFactory,
+            $this->createMock(Random::class),
+            $storeManager,
+            $this->createMock(Emulation::class),
+            $transportBuilder,
+            $this->createMock(LoggerInterface::class),
+            $this->createMock(Image::class)
+        ))->send();
+    }
+
+    public function testStoreWithReviewsSwitchedOffIsNotProcessed(): void
+    {
+        $store = $this->createMock(Store::class);
+        $store->method('getId')->willReturn(1);
+        $storeManager = $this->createMock(StoreManagerInterface::class);
+        $storeManager->method('getStores')->willReturn([$store]);
+        $config = $this->createMock(Config::class);
+        $config->method('enabled')->willReturn(true);
+        $config->method('reviewsEnabled')->willReturn(false);
+        $invitation = $this->createMock(Invitation::class);
+        $invitation->expects(self::never())->method('getDueOrders');
+
+        (new InvitationSender(
+            $invitation,
+            $config,
+            $this->getMockBuilder(OrderFactory::class)->disableOriginalConstructor()->onlyMethods(['create'])->getMock(),
+            $this->createMock(Random::class),
+            $storeManager,
+            $this->createMock(Emulation::class),
+            $this->createMock(TransportBuilder::class),
+            $this->createMock(LoggerInterface::class),
+            $this->createMock(Image::class)
         ))->send();
     }
 }

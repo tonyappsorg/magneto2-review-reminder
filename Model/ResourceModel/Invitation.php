@@ -57,6 +57,16 @@ class Invitation
         );
     }
 
+    /** Status 4: nothing in the order could be reviewed, so no email went out. */
+    public function markSkipped(int $orderId): void
+    {
+        $this->resource->getConnection()->update(
+            $this->resource->getTableName('tonyapps_review_reminder'),
+            ['status' => 4],
+            ['order_id = ?' => $orderId, 'status = ?' => 0]
+        );
+    }
+
     /** Status 3 after MAX_ATTEMPTS failures takes the order out of the queue. */
     public function recordFailure(int $orderId): void
     {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Tonyapps\ReviewReminder\Model;
 
 use Magento\Catalog\Helper\Image;
+use Magento\Catalog\Model\Product\Attribute\Source\Status;
 use Magento\Framework\App\Area;
 use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Framework\Math\Random;
@@ -35,7 +36,7 @@ class InvitationSender
     {
         foreach ($this->storeManager->getStores() as $store) {
             $storeId = (int) $store->getId();
-            if (!$this->config->enabled($storeId)) {
+            if (!$this->config->enabled($storeId) || !$this->config->reviewsEnabled($storeId)) {
                 continue;
             }
 
@@ -49,8 +50,11 @@ class InvitationSender
                 }
                 $this->emulation->startEnvironmentEmulation($storeId, Area::AREA_FRONTEND, true);
                 try {
-                    $this->sendOrder($row, $token, $storeId);
-                    $this->invitation->markSent($orderId);
+                    if ($this->sendOrder($row, $token, $storeId)) {
+                        $this->invitation->markSent($orderId);
+                    } else {
+                        $this->invitation->markSkipped($orderId);
+                    }
                 } catch (\Throwable $e) {
                     $this->invitation->recordFailure($orderId);
                     $this->logger->error('Review invitation for order ' . $orderId . ' failed: ' . $e->getMessage());
@@ -61,9 +65,13 @@ class InvitationSender
         }
     }
 
-    /** @param array<string, mixed> $row */
-    private function sendOrder(array $row, string $token, int $storeId): void
+    /**
+     * @param array<string, mixed> $row
+     * @return bool false when no shipped product can be reviewed, so nothing was sent
+     */
+    private function sendOrder(array $row, string $token, int $storeId): bool
     {
+        $websiteId = (int) $this->storeManager->getStore($storeId)->getWebsiteId();
         /** @var Order $order */
         $order = $this->orderFactory->create()->load((int) $row['entity_id']);
         $products = [];
@@ -72,7 +80,12 @@ class InvitationSender
                 continue;
             }
             $product = $item->getProduct();
-            if (!$product || !$product->getId()) {
+            // Reviewable = its product page (with the review form) can be opened in this store.
+            if (!$product || !$product->getId()
+                || (int) $product->getStatus() !== Status::STATUS_ENABLED
+                || !$product->isVisibleInSiteVisibility()
+                || !in_array($websiteId, array_map('intval', (array) $product->getWebsiteIds()), true)
+            ) {
                 continue;
             }
             $products[] = [
@@ -82,7 +95,7 @@ class InvitationSender
             ];
         }
         if (!$products) {
-            return;
+            return false;
         }
         $store = $this->storeManager->getStore($storeId);
         $unsubscribeUrl = $store->getUrl('reviewreminder/reminder/unsubscribe', ['token' => $token, '_nosid' => true]);
@@ -100,5 +113,6 @@ class InvitationSender
             ->setFromByScope($this->config->identity($storeId), $storeId)
             ->addTo((string) $row['customer_email'])
             ->getTransport()->sendMessage();
+        return true;
     }
 }
