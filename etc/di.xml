@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <!-- Tonyapps_EmailDesigner: a block and a starter design for the invitation. Ignored without that module. -->
+    <type name="Tonyapps\EmailDesigner\Model\BlockPool">
+        <arguments>
+            <argument name="blocks" xsi:type="array">
+                <item name="reviewreminder_products" xsi:type="array">
+                    <item name="label" xsi:type="string" translate="true">Products to review</item>
+                    <item name="templates" xsi:type="array">
+                        <item name="0" xsi:type="string">tonyapps_reviewreminder_email_template</item>
+                    </item>
+                    <item name="directive" xsi:type="string"><![CDATA[<table width="100%" cellpadding="0" cellspacing="0" role="presentation">{{for product in products}}<tr><td style="padding:16px 0;border-top:1px solid #e5e5e5;"><table width="100%" cellpadding="0" cellspacing="0" role="presentation"><tr><td width="120" valign="top" style="padding-right:20px;"><a href="{{var product.url}}"><img src="{{var product.image}}" alt="{{var product.name}}" width="120" style="display:block;width:120px;height:auto;border:0;"/></a></td><td valign="middle"><p style="margin:0 0 8px;font-size:16px;font-weight:600;">{{var product.name}}</p><p style="margin:0 0 12px;font-size:24px;letter-spacing:4px;line-height:1;"><a href="{{var product.url}}" style="color:#f5a623;text-decoration:none;">&#9733;&#9733;&#9733;&#9733;&#9733;</a></p><a href="{{var product.url}}" style="display:inline-block;padding:10px 20px;background:#1979c3;color:#ffffff;text-decoration:none;font-weight:600;border-radius:3px;">{{var reviewButtonLabel}}</a></td></tr></table></td></tr>{{/for}}</table>]]></item>
+                </item>
+            </argument>
+            <argument name="starters" xsi:type="array">
+                <item name="tonyapps_reviewreminder_email_template" xsi:type="string">Tonyapps_ReviewReminder::view/adminhtml/email_designer/invitation.mjml</item>
+            </argument>
+        </arguments>
+    </type>
+</config>

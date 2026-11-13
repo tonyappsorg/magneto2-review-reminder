@@ -36,6 +36,7 @@ Why it exists: Magento Open Source supports product reviews, but it does not sen
 - Verified buyer: `Observer\MarkVerifiedBuyer` on `review_save_after` → `Model\ResourceModel\VerifiedReview::associate($reviewId, $customerId, $productId)`: latest shipped order item of that customer and product (order not canceled) is stored in `tonyapps_review_reminder_verified_review`. Display: `Plugin\Review\Block\Product\View\ListViewPlugin` (frontend `di.xml`, on `Magento\Review\Block\Product\View\ListView`) fetches `getVerifiedIds()`; template `product/view/list.phtml` replaces core's via `review_product_list.xml` and `review_product_listajax.xml` (block `product.info.product_additional_data`) and prints the "Verified Buyer" span.
 - Review-form opener: `view/frontend/web/js/open-review-form.js`, loaded on product pages by `catalog_product_view.xml` (`before.body.end`, `product/open-review-form.phtml`); opens the Reviews tab and scrolls to the form when the URL hash is `#review-form`.
 - Config reader: `Helper\Config` (`enabled`, `delayDays`, `identity`, `template`).
+- Email Designer (`etc/di.xml`, ignored without `Tonyapps_EmailDesigner`): block `reviewreminder_products` (*Products to review*, the `{{for product in products}}` loop) and starter `view/adminhtml/email_designer/invitation.mjml` for `tonyapps_reviewreminder_email_template`.
 
 ## Data model
 
@@ -85,6 +86,7 @@ QA tip from 2026-11-08: set the delay to 1 day and backdate a test shipment's `s
 
 ## Change history
 
+- **2026-11-13 Email Designer blocks and starter designs**: `etc/di.xml` registers the *Products to review* block and a starter design that recreates the invitation (heading, texts, products, thank-you and unsubscribe line as editable text).
 - **2026-11-13 reviewable products**: products that are disabled, not visible individually or not in the store's website are left out of the invitation, and stores with *Enable Reviews* off get none. An order with nothing left to review is marked status 4 (nothing to review) instead of 1 (sent). Tests in `InvitationSenderTest`, `InvitationTest`.
 - **2026-11-11 template ID rename**: default template ID is `tonyapps_reviewreminder_email_template` (was `tonyapps_reviewreminder_invitation`). The template setting lists the default under an ID made from its config path, so the old ID made the setting fail with "Email template is not defined" and no other template could be picked. Theme overrides keep working (they go by file name). Lets stores pick Email Designer designs.
 - **2026-11-10 QA fix**: the invitation's product links end in `#review-form`, but Luma marks the Reviews tab active for that hash and keeps its content hidden, so a shopper arriving from the email saw no form. `view/frontend/web/js/open-review-form.js` (loaded on product pages) opens the Reviews tab and scrolls to the form when the page is reached with that hash.

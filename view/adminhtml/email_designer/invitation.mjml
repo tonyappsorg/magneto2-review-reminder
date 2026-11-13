@@ -1,0 +1,7 @@
+        <mj-text font-size="24px" font-weight="600">{{trans "How did we do, %name?" name=$customerName}}</mj-text>
+        <mj-text>{{trans "Your order #%order from %store has arrived. We'd love to hear what you think." order=$orderIncrementId store=$storeName}}</mj-text>
+        <mj-text color="#666666">{{trans "It only takes a minute, and your honest review helps other shoppers choose with confidence."}}</mj-text>
+        <mj-raw ta-block="reviewreminder_products"></mj-raw>
+        <mj-divider border-width="1px" border-color="#e5e5e5"></mj-divider>
+        <mj-text>{{trans "Thank you for shopping with %store!" store=$storeName}}</mj-text>
+        <mj-text font-size="12px" color="#999999">{{trans "Don't want these emails?"}} <a href="{{var unsubscribeUrl}}" style="color:#999999;">{{trans "Stop review invitations"}}</a></mj-text>
